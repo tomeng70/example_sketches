@@ -139,7 +139,7 @@ void setup() {
 
   // populate the character buffer with null characters.
   int i;
-  for (i = 0; i < 10; i++) {
+  for (i = 0; i < 9; i++) {
     bufTime[i] = NULL;
   }
 
