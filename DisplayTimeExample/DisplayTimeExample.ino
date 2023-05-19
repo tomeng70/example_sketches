@@ -3,6 +3,9 @@
 #include <Elegoo_TFTLCD.h> // Hardware-specific library
 #include <TouchScreen.h>
 
+// uncomment following line to enable debug statements.
+//define DEBUG
+
 // The control pins for the LCD can be assigned to any digital or
 // analog pins...but we'll use the analog pins as this allows us to
 // double up the pins with the touch screen (see the TFT paint example).
@@ -52,7 +55,7 @@
 #define ILI9341_RED         0xF800      /* 255,   0,   0 */
 #define ILI9341_MAGENTA     0xF81F      /* 255,   0, 255 */
 #define ILI9341_YELLOW      0xFFE0      /* 255, 255,   0 */
-#define ILI9341_WHITE       0xFFFF      /* 255, 255, 255 */
+#define IL9I341_WHITE       0xFFFF      /* 255, 255, 255 */
 #define ILI9341_ORANGE      0xFD20      /* 255, 165,   0 */
 #define ILI9341_GREENYELLOW 0xAFE5      /* 173, 255,  47 */
 #define ILI9341_PINK        0xF81F
@@ -64,20 +67,17 @@
 #define XP 8   // can be a digital pin
 
 //Touch For New ILI9341 TP
-#define TS_MINX 120
-#define TS_MAXX 900
+#define TS_MINX 105
+#define TS_MAXX 940
 
-#define TS_MINY 70
-#define TS_MAXY 920
+#define TS_MINY 73
+#define TS_MAXY 922
 // We have a status line for like, is FONA working
 #define STATUS_X 10
 #define STATUS_Y 65
 
 #define MINPRESSURE 5
 #define MAXPRESSURE 1000
-
-//const int16_t TS_LEFT = 122, TS_RT = 929, TS_TOP = 77, TS_BOT = 884;
-const int16_t TS_TOP = 122, TS_BOT = 929, TS_LEFT = 77, TS_RT = 884;
 
 // Create a TFT object that we can use to interat with the touch screen.
 Elegoo_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
@@ -97,28 +97,26 @@ Elegoo_GFX_Button btn_test;
 
 void initButtons() {
   // initialize test button
-  btn_test.initButton(&tft,240, 180, 80, 40, WHITE, CYAN, BLUE, "Test", 2);
+  btn_test.initButton(&tft,240, 180, 80, 40, IL9I341_WHITE, ILI9341_CYAN, ILI9341_BLUE, "Test", 2);
+  btn_test.drawButton(false);
 }
 
 void drawButtons() {
-  //btn_test.drawButton();
-
+  // check to see if just pressed or just released.
   if (btn_test.justPressed()) {
+    // invert colors to indicate button is currently pressed.
     btn_test.drawButton(true);
     Serial.println("*** Test was just pressed! ***");
   } else if(btn_test.justReleased()) {
+    // return to normal colors to indicate that the button is currently unpressed.
     Serial.println("*** Test just released. ***");
     btn_test.drawButton(false);
-  } else {
-    btn_test.drawButton(false);
-  }
-
+  } 
     
+  // let user know the button is pressed through serial connection
   if(btn_test.isPressed()) {
     Serial.println("test is pressed!");
   }
-
-
 }
 
 void checkButtons() {
@@ -128,9 +126,15 @@ void checkButtons() {
   // get the current touch screen point.
   TSPoint p = ts.getPoint();
 
+  // when the display is in portrait mode (tft.setRotation(1))
+  // it appears that the display x axis corresponds to the touch screen y axis
+  // and the display y axis corresponds to the touch screen x axis.
+  // also it appears that the touch screen and display axes point in opposite directions.
+  // create two variables, xpos and ypos, that will continue the x and y coordinates in terms of the display axes.
+  // use the map function to map from the touch screen coordinates to the display coordinates.
   int16_t xpos, ypos;  //screen coordinates
-  xpos = map(p.x, TS_RT, TS_LEFT, 0, tft.width());
-  ypos = map(p.y, TS_BOT, TS_TOP, 0, tft.height());
+  xpos = map(p.y, TS_MAXY, TS_MINY,  0, tft.width());
+  ypos = map(p.x, TS_MAXX, TS_MINX, 0, tft.height());
 
   // switch back to display mode.
   digitalWrite(13, LOW);
@@ -140,51 +144,23 @@ void checkButtons() {
   pinMode(YP, OUTPUT);
   //pinMode(YM, OUTPUT);
 
-
-//  Serial.print("p.z = ");
- // Serial.println(p.z);
-
-  // is user pushing in the range of a valid press.
-  if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
-    // get the coordinates of the press.
-    // scale from 0->1023 to tft.width
-    //p.x = map(p.x, TS_MINX, TS_MAXX, tft.width(), 0);
-    //p.y = (tft.height()-map(p.y, TS_MINY, TS_MAXY, tft.height(), 0));
-    
-    Serial.print("p.x, p.y, p.z =");
-    Serial.print(p.x);
-    Serial.print(", ");
-    Serial.print(p.y);
-    Serial.print(", ");
-    Serial.println(p.z);
-
-    Serial.print("xpos, ypos =");
-    Serial.print(xpos);
-    Serial.print(", ");
-    Serial.println(ypos);
-  }
-
   // check to see if the user is pressing in the area of the button.
   if(btn_test.contains(xpos, ypos)) {
-      Serial.println("Contains it");
       btn_test.press(true);
   } else {
     btn_test.press(false);
   }
-  
-
-
-  
 }
 
 void initScreen() {
   // which pinout configuration to use?
-  #ifdef USE_Elegoo_SHIELD_PINOUT
+#ifdef USE_Elegoo_SHIELD_PINOUT
   Serial.println(F("Using Elegoo 2.4\" TFT Arduino Shield Pinout"));
 #else
   Serial.println(F("Using Elegoo 2.4\" TFT Breakout Board Pinout"));
 #endif
 
+  // print display screen dimensions (in pixels).
   Serial.print("TFT size is "); Serial.print(tft.width()); Serial.print("x"); Serial.println(tft.height());
 
   // reset screen.
@@ -283,14 +259,16 @@ void setup() {
 }
 
 void loop() {
-  // draw buttons
-  drawButtons();
-
   // check buttons.
   checkButtons();
 
-  // put your main code here, to run repeatedly:
+    // draw buttons.
+  drawButtons();
+
+  // update time.
   updateCurrTime();
+
+  // display time.
   displayCurrTime();
   
   delay(100);
