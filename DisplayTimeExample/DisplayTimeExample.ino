@@ -73,7 +73,7 @@
 #define STATUS_X 10
 #define STATUS_Y 65
 
-#define MINPRESSURE 10
+#define MINPRESSURE 5
 #define MAXPRESSURE 1000
 
 //const int16_t TS_LEFT = 122, TS_RT = 929, TS_TOP = 77, TS_BOT = 884;
@@ -97,11 +97,28 @@ Elegoo_GFX_Button btn_test;
 
 void initButtons() {
   // initialize test button
-  btn_test.initButton(&tft,260, 220, 60, 30, WHITE, CYAN, BLUE, "Test", 2);
+  btn_test.initButton(&tft,240, 180, 80, 40, WHITE, CYAN, BLUE, "Test", 2);
 }
 
 void drawButtons() {
-  btn_test.drawButton();
+  //btn_test.drawButton();
+
+  if (btn_test.justPressed()) {
+    btn_test.drawButton(true);
+    Serial.println("*** Test was just pressed! ***");
+  } else if(btn_test.justReleased()) {
+    Serial.println("*** Test just released. ***");
+    btn_test.drawButton(false);
+  } else {
+    btn_test.drawButton(false);
+  }
+
+    
+  if(btn_test.isPressed()) {
+    Serial.println("test is pressed!");
+  }
+
+
 }
 
 void checkButtons() {
@@ -131,8 +148,9 @@ void checkButtons() {
   if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
     // get the coordinates of the press.
     // scale from 0->1023 to tft.width
-    p.x = map(p.x, TS_MINX, TS_MAXX, tft.width(), 0);
-    p.y = (tft.height()-map(p.y, TS_MINY, TS_MAXY, tft.height(), 0));
+    //p.x = map(p.x, TS_MINX, TS_MAXX, tft.width(), 0);
+    //p.y = (tft.height()-map(p.y, TS_MINY, TS_MAXY, tft.height(), 0));
+    
     Serial.print("p.x, p.y, p.z =");
     Serial.print(p.x);
     Serial.print(", ");
@@ -148,23 +166,15 @@ void checkButtons() {
 
   // check to see if the user is pressing in the area of the button.
   if(btn_test.contains(xpos, ypos)) {
-    Serial.println("Contains it");
-    btn_test.press(true);
+      Serial.println("Contains it");
+      btn_test.press(true);
   } else {
     btn_test.press(false);
   }
+  
 
-  if(btn_test.justPressed()) {
-    Serial.println("*** Test was just pressed! ***");
-  }
 
-  if(btn_test.isPressed()) {
-    Serial.println("test is pressed!");
-  }
-
-  if(btn_test.justReleased()) {
-    Serial.println("*** Test was just released! ***");
-  }
+  
 }
 
 void initScreen() {
