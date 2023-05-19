@@ -1,6 +1,7 @@
 #include <TimeLib.h>
 #include <Elegoo_GFX.h>    // Core graphics library
 #include <Elegoo_TFTLCD.h> // Hardware-specific library
+#include <TouchScreen.h>
 
 // The control pins for the LCD can be assigned to any digital or
 // analog pins...but we'll use the analog pins as this allows us to
@@ -35,8 +36,54 @@
 #define YELLOW  0xFFE0
 #define WHITE   0xFFFF
 
+// More color definitions
+#define ILI9341_BLACK       0x0000      /*   0,   0,   0 */
+#define ILI9341_NAVY        0x000F      /*   0,   0, 128 */
+#define ILI9341_DARKGREEN   0x03E0      /*   0, 128,   0 */
+#define ILI9341_DARKCYAN    0x03EF      /*   0, 128, 128 */
+#define ILI9341_MAROON      0x7800      /* 128,   0,   0 */
+#define ILI9341_PURPLE      0x780F      /* 128,   0, 128 */
+#define ILI9341_OLIVE       0x7BE0      /* 128, 128,   0 */
+#define ILI9341_LIGHTGREY   0xC618      /* 192, 192, 192 */
+#define ILI9341_DARKGREY    0x7BEF      /* 128, 128, 128 */
+#define ILI9341_BLUE        0x001F      /*   0,   0, 255 */
+#define ILI9341_GREEN       0x07E0      /*   0, 255,   0 */
+#define ILI9341_CYAN        0x07FF      /*   0, 255, 255 */
+#define ILI9341_RED         0xF800      /* 255,   0,   0 */
+#define ILI9341_MAGENTA     0xF81F      /* 255,   0, 255 */
+#define ILI9341_YELLOW      0xFFE0      /* 255, 255,   0 */
+#define ILI9341_WHITE       0xFFFF      /* 255, 255, 255 */
+#define ILI9341_ORANGE      0xFD20      /* 255, 165,   0 */
+#define ILI9341_GREENYELLOW 0xAFE5      /* 173, 255,  47 */
+#define ILI9341_PINK        0xF81F
+
+
+#define YP A3  // must be an analog pin, use "An" notation!
+#define XM A2  // must be an analog pin, use "An" notation!
+#define YM 9   // can be a digital pin
+#define XP 8   // can be a digital pin
+
+//Touch For New ILI9341 TP
+#define TS_MINX 120
+#define TS_MAXX 900
+
+#define TS_MINY 70
+#define TS_MAXY 920
+// We have a status line for like, is FONA working
+#define STATUS_X 10
+#define STATUS_Y 65
+
+#define MINPRESSURE 10
+#define MAXPRESSURE 1000
+
+//const int16_t TS_LEFT = 122, TS_RT = 929, TS_TOP = 77, TS_BOT = 884;
+const int16_t TS_TOP = 122, TS_BOT = 929, TS_LEFT = 77, TS_RT = 884;
+
 // Create a TFT object that we can use to interat with the touch screen.
 Elegoo_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
+
+// Create a touch screen object.
+TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 
 // time related global variables.
 char bufTime[9];
@@ -44,6 +91,81 @@ time_t currTime;
 long h;
 long m;
 long s;
+
+// button related stuff.
+Elegoo_GFX_Button btn_test;
+
+void initButtons() {
+  // initialize test button
+  btn_test.initButton(&tft,260, 220, 60, 30, WHITE, CYAN, BLUE, "Test", 2);
+}
+
+void drawButtons() {
+  btn_test.drawButton();
+}
+
+void checkButtons() {
+  // switch to touchscreen
+  digitalWrite(13, HIGH);
+
+  // get the current touch screen point.
+  TSPoint p = ts.getPoint();
+
+  int16_t xpos, ypos;  //screen coordinates
+  xpos = map(p.x, TS_RT, TS_LEFT, 0, tft.width());
+  ypos = map(p.y, TS_BOT, TS_TOP, 0, tft.height());
+
+  // switch back to display mode.
+  digitalWrite(13, LOW);
+  // if sharing pins, you'll need to fix the directions of the touchscreen pins
+  //pinMode(XP, OUTPUT);
+  pinMode(XM, OUTPUT);
+  pinMode(YP, OUTPUT);
+  //pinMode(YM, OUTPUT);
+
+
+//  Serial.print("p.z = ");
+ // Serial.println(p.z);
+
+  // is user pushing in the range of a valid press.
+  if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
+    // get the coordinates of the press.
+    // scale from 0->1023 to tft.width
+    p.x = map(p.x, TS_MINX, TS_MAXX, tft.width(), 0);
+    p.y = (tft.height()-map(p.y, TS_MINY, TS_MAXY, tft.height(), 0));
+    Serial.print("p.x, p.y, p.z =");
+    Serial.print(p.x);
+    Serial.print(", ");
+    Serial.print(p.y);
+    Serial.print(", ");
+    Serial.println(p.z);
+
+    Serial.print("xpos, ypos =");
+    Serial.print(xpos);
+    Serial.print(", ");
+    Serial.println(ypos);
+  }
+
+  // check to see if the user is pressing in the area of the button.
+  if(btn_test.contains(xpos, ypos)) {
+    Serial.println("Contains it");
+    btn_test.press(true);
+  } else {
+    btn_test.press(false);
+  }
+
+  if(btn_test.justPressed()) {
+    Serial.println("*** Test was just pressed! ***");
+  }
+
+  if(btn_test.isPressed()) {
+    Serial.println("test is pressed!");
+  }
+
+  if(btn_test.justReleased()) {
+    Serial.println("*** Test was just released! ***");
+  }
+}
 
 void initScreen() {
   // which pinout configuration to use?
@@ -117,7 +239,7 @@ void updateCurrTime() {
   sprintf(bufTime, "%02d:%02d:%02d", (int)h, (int)m, (int)s);
 
   // debug display character buffer in serial output.
-  Serial.println(bufTime);
+  //Serial.println(bufTime);
 }
 
 void displayCurrTime() {
@@ -145,12 +267,21 @@ void setup() {
 
   // initialize screen.
   initScreen();
+
+  // initialize buttons.
+  initButtons();
 }
 
 void loop() {
+  // draw buttons
+  drawButtons();
+
+  // check buttons.
+  checkButtons();
+
   // put your main code here, to run repeatedly:
   updateCurrTime();
   displayCurrTime();
   
-  delay(1000);
+  delay(100);
 }
