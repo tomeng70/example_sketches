@@ -3,9 +3,6 @@
 #include <Elegoo_TFTLCD.h> // Hardware-specific library
 #include <TouchScreen.h>
 
-// uncomment following line to enable debug statements.
-//define DEBUG
-
 // The control pins for the LCD can be assigned to any digital or
 // analog pins...but we'll use the analog pins as this allows us to
 // double up the pins with the touch screen (see the TFT paint example).
@@ -66,18 +63,19 @@
 #define YM 9   // can be a digital pin
 #define XP 8   // can be a digital pin
 
-//Touch For New ILI9341 TP
+// the following min and max values
+// for the coordinate axes of the touch screen
+// were obtained by displaying the x and y values 
+// for my screen when the screen was being pressed with 
+// a touchscreen stylus. (T. Eng, 5/19/2023)
 #define TS_MINX 105
 #define TS_MAXX 940
-
 #define TS_MINY 73
 #define TS_MAXY 922
+
 // We have a status line for like, is FONA working
 #define STATUS_X 10
 #define STATUS_Y 65
-
-#define MINPRESSURE 5
-#define MAXPRESSURE 1000
 
 // Create a TFT object that we can use to interat with the touch screen.
 Elegoo_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
