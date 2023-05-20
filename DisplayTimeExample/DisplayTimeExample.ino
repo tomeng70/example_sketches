@@ -83,6 +83,17 @@ Elegoo_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 // Create a touch screen object.
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 
+// enum to keep track of the state of the system.
+enum State {
+  DISPLAY_TIME,
+  SET_HOUR,
+  SET_MINUTE,
+  SET_SECOND
+};
+
+// keep track of the current state.
+State currState;
+
 // time related global variables.
 char bufTime[9];
 time_t currTime;
@@ -92,6 +103,11 @@ long s;
 
 // button related stuff.
 Elegoo_GFX_Button btn_test;
+
+void initSystem() {
+  // initialize the system.
+  currState = DISPLAY_TIME;
+}
 
 void initButtons() {
   // initialize test button
@@ -263,11 +279,15 @@ void loop() {
     // draw buttons.
   drawButtons();
 
-  // update time.
-  updateCurrTime();
+  // what state are we in?
+  if (currState == DISPLAY_TIME) {
+    // update time.
+    updateCurrTime();
 
-  // display time.
-  displayCurrTime();
+    // display time.
+    displayCurrTime();
+  }
+  
   
   delay(100);
 }
