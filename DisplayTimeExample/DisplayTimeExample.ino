@@ -119,7 +119,7 @@ void initSystem() {
 
 void initButtons() {
   // initialize test button
-  btn_test.initButton(&tft,240, 180, 80, 40, IL9I341_WHITE, ILI9341_CYAN, ILI9341_BLUE, "Test", 2);
+  btn_test.initButton(&tft,100, 180, 80, 40, IL9I341_WHITE, ILI9341_CYAN, ILI9341_BLUE, "Set", 2);
   btn_test.drawButton(false);
 }
 
@@ -167,8 +167,10 @@ void checkButtons() {
   //pinMode(YM, OUTPUT);
 
   // check to see if the user is pressing in the area of the button.
-  if(btn_test.contains(xpos, ypos)) {
+  if(p.z > 0 && btn_test.contains(xpos, ypos)) {
       btn_test.press(true);
+  } else if (btn_test.isPressed() && btn_test.contains(xpos, ypos)) {
+    btn_test.press(true);
   } else {
     btn_test.press(false);
   }
