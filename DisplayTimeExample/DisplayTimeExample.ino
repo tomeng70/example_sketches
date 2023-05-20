@@ -101,12 +101,20 @@ long h;
 long m;
 long s;
 
+// track elapsed time to decide when to refresh display.
+#define DISPLAY_REFRESH_MSEC 500
+unsigned long prevDisplayTime;
+unsigned long currDisplayTime;
+
 // button related stuff.
 Elegoo_GFX_Button btn_test;
 
 void initSystem() {
   // initialize the system.
   currState = DISPLAY_TIME;
+
+  // set previous time to 0.
+  prevDisplayTime = 0;
 }
 
 void initButtons() {
@@ -242,17 +250,28 @@ void updateCurrTime() {
   //Serial.println(bufTime);
 }
 
+// the function displayCurrTime() checks to see if a certain amount of time
+// has passed before it will refresh the time on the display.
+// this is done to reduce the flicker of the screen.
 void displayCurrTime() {
+  // get the current time.
+  currDisplayTime = millis();
 
-  // erase the old time.
-  tft.fillRect(0, 0, 200, 40, BLACK);
+  // has enough time passed so we can refresh screen?
+  if (currDisplayTime - prevDisplayTime > DISPLAY_REFRESH_MSEC) {
+    // erase the old time.
+    tft.fillRect(0, 0, 200, 40, BLACK);
 
-  tft.setCursor(0, 0);
+    // write the time on the display.
+    tft.setCursor(0, 0);  
+    tft.setTextColor(BLUE);  
+    tft.setTextSize(4);
+    tft.println(bufTime);
+
+    // since we refreshed the display, the current time becomes the previous time.
+    prevDisplayTime = currDisplayTime;
+  }
   
-  tft.setTextColor(BLUE);  
-  tft.setTextSize(4);
-  tft.println(bufTime);
-
 }
 
 void setup() {
@@ -270,6 +289,9 @@ void setup() {
 
   // initialize buttons.
   initButtons();
+
+  // initialize system.
+  initSystem();
 }
 
 void loop() {
