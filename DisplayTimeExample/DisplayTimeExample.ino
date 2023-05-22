@@ -106,8 +106,8 @@ long s;
 unsigned long prevDisplayTime;
 unsigned long currDisplayTime;
 
-// button related stuff.
-Elegoo_GFX_Button btn_test;
+// set time button.
+Elegoo_GFX_Button btnSet;
 
 void initSystem() {
   // initialize the system.
@@ -119,28 +119,29 @@ void initSystem() {
 
 void initButtons() {
   // initialize test button
-  btn_test.initButton(&tft,100, 180, 80, 40, IL9I341_WHITE, ILI9341_CYAN, ILI9341_BLUE, "Set", 2);
-  btn_test.drawButton(false);
+  btnSet.initButton(&tft,100, 180, 80, 40, IL9I341_WHITE, ILI9341_CYAN, ILI9341_BLUE, "Set", 2);
+  btnSet.drawButton(false);
 }
 
 void drawButtons() {
   // check to see if just pressed or just released.
-  if (btn_test.justPressed()) {
+  if (btnSet.justPressed()) {
     // invert colors to indicate button is currently pressed.
-    btn_test.drawButton(true);
+    //btnSet.drawButton(true);
     Serial.println("*** Test was just pressed! ***");
-  } else if(btn_test.justReleased()) {
+  } else if(btnSet.justReleased()) {
     // return to normal colors to indicate that the button is currently unpressed.
     Serial.println("*** Test just released. ***");
-    btn_test.drawButton(false);
+    //btnSet.drawButton(false);
   } 
     
   // let user know the button is pressed through serial connection
-  if(btn_test.isPressed()) {
+  if(btnSet.isPressed()) {
     Serial.println("test is pressed!");
   }
 }
 
+// check what the state of the buttons are.
 void checkButtons() {
   // switch to touchscreen
   digitalWrite(13, HIGH);
@@ -167,12 +168,41 @@ void checkButtons() {
   //pinMode(YM, OUTPUT);
 
   // check to see if the user is pressing in the area of the button.
-  if(p.z > 0 && btn_test.contains(xpos, ypos)) {
-      btn_test.press(true);
-  } else if (btn_test.isPressed() && btn_test.contains(xpos, ypos)) {
-    btn_test.press(true);
+  if(p.z > 0 && btnSet.contains(xpos, ypos)) {
+    // i think this is when user first presses screen.
+    btnSet.press(true);
+  } else if (btnSet.isPressed() && btnSet.contains(xpos, ypos)) {
+    // i think this is when user has kept finger still pressed against screen.
+    btnSet.press(true);
   } else {
-    btn_test.press(false);
+    btnSet.press(false);
+  }
+}
+
+// check to see if we need to change the system state.
+void checkSysState() {
+  // was the set button just pressed?
+  if (btnSet.justPressed()) {
+    if (currState == DISPLAY_TIME) {
+      // switch to set hour mode.
+      currState = SET_HOUR;
+      Serial.println("SET_HOUR mode");
+      btnSet.drawButton(true);
+    } else if (currState == SET_HOUR) {
+      // switch to set minute mode.
+      currState = SET_MINUTE; 
+      Serial.println("SET_MINUTE mode");
+      btnSet.drawButton(true);
+    } else if (currState == SET_MINUTE) {
+      currState = SET_SECOND;
+      Serial.println("SET_SECOND mode");
+      //btnSet.drawButton(true);
+    } else {
+      // by default switch back to DISPLAY_TIME
+      currState = DISPLAY_TIME;
+      Serial.println("DISPLAY_TIME mode");
+      btnSet.drawButton(false);
+    }
   }
 }
 
@@ -224,7 +254,6 @@ void initScreen() {
     Serial.println(F("Also if using the breakout, double-check that all wiring"));
     Serial.println(F("matches the tutorial."));
     identifier=0x9328;
-  
   }
 
   // start the screen.
@@ -300,8 +329,14 @@ void loop() {
   // check buttons.
   checkButtons();
 
+// we can draw set button when we check system state.
+
     // draw buttons.
-  drawButtons();
+  //drawButtons();
+  
+
+  // check the system state.
+  checkSysState();
 
   // what state are we in?
   if (currState == DISPLAY_TIME) {
@@ -310,7 +345,12 @@ void loop() {
 
     // display time.
     displayCurrTime();
-  }
+  } else if (currState == SET_HOUR 
+    || currState == SET_MINUTE 
+    || currState == SET_SECOND) {
+    // adjust hours.
+
+  } 
   
   
   delay(100);
