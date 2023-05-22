@@ -281,6 +281,18 @@ void updateCurrTime() {
   //Serial.println(bufTime);
 }
 
+// render the time on the screen.
+void renderCurrTime() {
+  // erase the old time.
+    tft.fillRect(0, 0, 205, 45, BLACK);
+
+    // write the time on the display.
+    tft.setCursor(5, 5);  
+    tft.setTextColor(BLUE);  
+    tft.setTextSize(4);
+    tft.println(bufTime);
+}
+
 // the function displayCurrTime() checks to see if a certain amount of time
 // has passed before it will refresh the time on the display.
 // this is done to reduce the flicker of the screen.
@@ -290,19 +302,32 @@ void displayCurrTime() {
 
   // has enough time passed so we can refresh screen?
   if (currDisplayTime - prevDisplayTime > DISPLAY_REFRESH_MSEC) {
-    // erase the old time.
-    tft.fillRect(0, 0, 200, 40, BLACK);
-
-    // write the time on the display.
-    tft.setCursor(0, 0);  
-    tft.setTextColor(BLUE);  
-    tft.setTextSize(4);
-    tft.println(bufTime);
-
+    // render the current time.
+    renderCurrTime();
+    
     // since we refreshed the display, the current time becomes the previous time.
     prevDisplayTime = currDisplayTime;
+  }  
+}
+
+void setTime() {
+  // highlight the area to be set and check to see if screen is pressed.
+  if (currState == SET_HOUR) {
+    // draw a rectangle around the hour field.
+    tft.drawRect(2, 0, 50, 40, YELLOW);
+  } else if (currState == SET_MINUTE) {
+    // erase previous rectangle (from set hour)
+    tft.drawRect(2, 0, 50, 40, BLACK);
+
+    // draw a rectangle around the minute field.
+    tft.drawRect(74,0, 50, 40, YELLOW);
+  } else if (currState == SET_SECOND) {
+    // erase previous rectangle (from set hour)
+    tft.drawRect(74, 0, 50, 40, BLACK);
+
+    // draw a rectangle around the second field.
+    tft.drawRect(146,0, 50, 40, YELLOW);
   }
-  
 }
 
 void setup() {
@@ -348,7 +373,8 @@ void loop() {
   } else if (currState == SET_HOUR 
     || currState == SET_MINUTE 
     || currState == SET_SECOND) {
-    // adjust hours.
+    // set time.
+    setTime();
 
   } 
   
