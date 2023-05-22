@@ -77,6 +77,70 @@
 #define STATUS_X 10
 #define STATUS_Y 65
 
+
+class TouchArea {
+
+ public:
+  // constructor
+  TouchArea(void)
+  {
+     _gfx = 0;
+  }
+
+  // initialize the touch area.
+  void initArea(Elegoo_GFX *gfx, int16_t x, int16_t y, 
+		      uint8_t w, uint8_t h, 
+		      uint16_t outline)
+  {
+    _x = x;
+    _y = y;
+    _w = w;
+    _h = h;
+    _outlinecolor = outline;
+    _gfx = gfx;
+  }
+
+  // draw the outline of the touch area.
+  void drawArea(bool eraseFlag=false)
+  {
+    /*
+    Serial.print(_x);
+   Serial.print(", ");
+   Serial.print(_y);
+   Serial.print(", ");
+   Serial.print(_w);
+   Serial.print(", ");
+   Serial.println(_h);
+   */
+
+   uint16_t outline;
+   if (eraseFlag == false) {
+     outline = _outlinecolor;
+   } else {
+     outline = BLACK;
+   }
+   
+   _gfx->drawRect(_x, _y, _w, _h, outline);
+
+
+  }
+
+  boolean contains(int16_t x, int16_t y);
+
+  void press(boolean p);
+  boolean isPressed();
+  boolean justPressed();
+  boolean justReleased();
+
+ private:
+  Elegoo_GFX *_gfx;
+  int16_t _x, _y;
+  uint16_t _w, _h;
+  uint16_t _outlinecolor;
+
+  boolean currstate, laststate;
+};
+
 // Create a TFT object that we can use to interat with the touch screen.
 Elegoo_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 
@@ -109,6 +173,11 @@ unsigned long currDisplayTime;
 // set time button.
 Elegoo_GFX_Button btnSet;
 
+// touch areas to set time.
+TouchArea touchHour;
+TouchArea touchMinute;
+TouchArea touchSecond;
+
 void initSystem() {
   // initialize the system.
   currState = DISPLAY_TIME;
@@ -118,9 +187,15 @@ void initSystem() {
 }
 
 void initButtons() {
-  // initialize test button
+  // initialize set button
   btnSet.initButton(&tft,100, 180, 80, 40, IL9I341_WHITE, ILI9341_CYAN, ILI9341_BLUE, "Set", 2);
   btnSet.drawButton(false);
+}
+
+void initTouchAreas() {
+  touchHour.initArea(&tft, 2, 0, 50, 40, YELLOW);
+  touchMinute.initArea(&tft, 74,0, 50, 40, YELLOW);
+  touchSecond.initArea(&tft, 146,0, 50, 40, YELLOW);
 }
 
 void drawButtons() {
@@ -314,19 +389,19 @@ void setTime() {
   // highlight the area to be set and check to see if screen is pressed.
   if (currState == SET_HOUR) {
     // draw a rectangle around the hour field.
-    tft.drawRect(2, 0, 50, 40, YELLOW);
+    touchHour.drawArea();
   } else if (currState == SET_MINUTE) {
     // erase previous rectangle (from set hour)
-    tft.drawRect(2, 0, 50, 40, BLACK);
+    touchHour.drawArea(true);
 
     // draw a rectangle around the minute field.
-    tft.drawRect(74,0, 50, 40, YELLOW);
+    touchMinute.drawArea();
   } else if (currState == SET_SECOND) {
     // erase previous rectangle (from set hour)
-    tft.drawRect(74, 0, 50, 40, BLACK);
+    touchMinute.drawArea(true);
 
     // draw a rectangle around the second field.
-    tft.drawRect(146,0, 50, 40, YELLOW);
+    touchSecond.drawArea();
   }
 }
 
@@ -345,6 +420,9 @@ void setup() {
 
   // initialize buttons.
   initButtons();
+
+  // initialize touch areas.
+  initTouchAreas();
 
   // initialize system.
   initSystem();
@@ -375,7 +453,6 @@ void loop() {
     || currState == SET_SECOND) {
     // set time.
     setTime();
-
   } 
   
   
