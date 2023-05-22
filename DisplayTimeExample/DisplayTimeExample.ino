@@ -79,7 +79,6 @@
 
 
 class TouchArea {
-
  public:
   // constructor
   TouchArea(void)
@@ -88,10 +87,7 @@ class TouchArea {
   }
 
   // initialize the touch area.
-  void initArea(Elegoo_GFX *gfx, int16_t x, int16_t y, 
-		      uint8_t w, uint8_t h, 
-		      uint16_t outline)
-  {
+  void initArea(Elegoo_GFX *gfx, int16_t x, int16_t y, uint8_t w, uint8_t h, uint16_t outline) { 
     _x = x;
     _y = y;
     _w = w;
@@ -101,36 +97,39 @@ class TouchArea {
   }
 
   // draw the outline of the touch area.
-  void drawArea(bool eraseFlag=false)
-  {
-    /*
-    Serial.print(_x);
-   Serial.print(", ");
-   Serial.print(_y);
-   Serial.print(", ");
-   Serial.print(_w);
-   Serial.print(", ");
-   Serial.println(_h);
-   */
-
-   uint16_t outline;
-   if (eraseFlag == false) {
-     outline = _outlinecolor;
-   } else {
-     outline = BLACK;
-   }
-   
-   _gfx->drawRect(_x, _y, _w, _h, outline);
-
-
+  void drawArea(bool eraseFlag=false) {
+    uint16_t outline;
+    if (eraseFlag == false) {
+      outline = _outlinecolor;
+    } else {
+      outline = BLACK;
+    }
+    
+    _gfx->drawRect(_x, _y, _w, _h, outline);   
   }
 
-  boolean contains(int16_t x, int16_t y);
+  boolean contains(int16_t x, int16_t y) {
+   if ((x < (_x - _w/2)) || (x > (_x + _w/2))) return false;
+   if ((y < (_y - _h/2)) || (y > (_y + _h/2))) return false;
+   return true;
+  }
 
-  void press(boolean p);
-  boolean isPressed();
-  boolean justPressed();
-  boolean justReleased();
+  void press(boolean p) {
+    laststate = currstate;
+    currstate = p;
+  }
+
+  boolean isPressed() {
+    return currstate;
+  }
+
+  boolean justPressed() {
+    return (currstate && !laststate);
+  }
+
+  boolean justReleased() {
+    return (!currstate && laststate);
+  }
 
  private:
   Elegoo_GFX *_gfx;
@@ -454,7 +453,6 @@ void loop() {
     // set time.
     setTime();
   } 
-  
-  
+    
   delay(100);
 }
