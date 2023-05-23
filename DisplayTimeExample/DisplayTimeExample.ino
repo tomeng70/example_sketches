@@ -242,7 +242,7 @@ void checkButtons() {
   //pinMode(YM, OUTPUT);
 
   // check to see if the user is pressing in the area of the button.
-  if(p.z > 0 && btnSet.contains(xpos, ypos)) {
+  if(p.z > ts.pressureThreshhold && btnSet.contains(xpos, ypos)) {
     // i think this is when user first presses screen.
     btnSet.press(true);
   } else if (btnSet.isPressed() && btnSet.contains(xpos, ypos)) {
@@ -385,7 +385,7 @@ void displayCurrTime() {
 }
 
 void setTime() {
-  // highlight the area to be set and check to see if screen is pressed.
+  // highlight the area to be set.
   if (currState == SET_HOUR) {
     // draw a rectangle around the hour field.
     touchHour.drawArea();
@@ -402,6 +402,7 @@ void setTime() {
     // draw a rectangle around the second field.
     touchSecond.drawArea();
   }
+
 }
 
 void setup() {
@@ -454,5 +455,5 @@ void loop() {
     setTime();
   } 
     
-  delay(100);
+  delay(50);
 }
