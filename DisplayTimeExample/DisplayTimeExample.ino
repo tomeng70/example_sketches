@@ -94,6 +94,15 @@ class TouchArea {
     _h = h;
     _outlinecolor = outline;
     _gfx = gfx;
+
+    Serial.print("initArea: ");
+    Serial.print(_x);
+    Serial.print(", ");
+    Serial.print(_y);
+    Serial.print(", ");
+    Serial.print(_w);
+    Serial.print(", ");
+    Serial.println(_h);
   }
 
   // draw the outline of the touch area.
@@ -109,9 +118,11 @@ class TouchArea {
   }
 
   boolean contains(int16_t x, int16_t y) {
-   if ((x < (_x - _w/2)) || (x > (_x + _w/2))) return false;
-   if ((y < (_y - _h/2)) || (y > (_y + _h/2))) return false;
-   return true;
+    // if x and y are out of bounds return false.
+    // otherwise return true;
+    if ((x < _x) || (x > (_x + _w))) return false;
+    if ((y < _y) || (y > (_y + _h))) return false;    
+    return true;
   }
 
   void press(boolean p) {
@@ -163,6 +174,9 @@ time_t currTime;
 long h;
 long m;
 long s;
+long currDay;
+long currMonth;
+long currYear;
 
 // track elapsed time to decide when to refresh display.
 #define DISPLAY_REFRESH_MSEC 500
@@ -251,7 +265,99 @@ void checkButtons() {
   } else {
     btnSet.press(false);
   }
+
+  // check to see if the user is pressing in the area time display (to set the time).
+  // set hour mode?
+  if (currState == SET_HOUR) {
+    if(p.z > ts.pressureThreshhold && touchHour.contains(xpos, ypos)) {
+      Serial.println("debug 2");
+      // i think this is when user first presses screen.
+      touchHour.press(true);
+    } 
+    else if (touchHour.isPressed() && touchHour.contains(xpos, ypos)) {
+      // i think this is when user has kept finger still pressed against screen.
+      touchHour.press(true);
+    } 
+    else {
+      touchHour.press(false);
+    }
+  } else if (currState == SET_MINUTE) {
+    if(p.z > ts.pressureThreshhold && touchMinute.contains(xpos, ypos)) {
+      // i think this is when user first presses screen.
+      touchMinute.press(true);
+    } 
+    else if (touchMinute.isPressed() && touchMinute.contains(xpos, ypos)) {
+      // i think this is when user has kept finger still pressed against screen.
+      touchMinute.press(true);
+    } 
+    else {
+      touchMinute.press(false);
+    }
+  } else if (currState == SET_SECOND) {
+    if(p.z > ts.pressureThreshhold && touchSecond.contains(xpos, ypos)) {
+      // i think this is when user first presses screen.
+      touchSecond.press(true);
+    } 
+    else if (touchSecond.isPressed() && touchSecond.contains(xpos, ypos)) {
+      // i think this is when user has kept finger still pressed against screen.
+      touchSecond.press(true);
+    } 
+    else {
+      touchSecond.press(false);
+    }
+  }
+
 }
+
+void updateCurrTime(bool noRefresh=false) {
+  // only refresh the current time if noRefresh is set to false.
+  // if the hours, minutes, or seconds are adjusted by the user, we want to use these adjusted values
+  // instead of the current system time.
+  if(noRefresh == false) {
+    // use the now() function to get the time all at once (so the seconds, minutes, and hours will be consistent).
+    currTime = now();
+    h = hour(currTime);
+    m = minute(currTime);
+    s = second(currTime);
+    currDay = day(currTime);
+    currMonth = month(currTime);
+    currYear = year(currTime);
+  }
+  
+  // use sprintf to format the output into the character buffer.
+  // note that the sprintf %d formatting tags expect ints and not longs, so cast values to int type.
+  sprintf(bufTime, "%02d:%02d:%02d", (int)h, (int)m, (int)s);
+}
+
+// render the time on the screen.
+void renderCurrTime() {
+  // erase the old time.
+    tft.fillRect(0, 0, 205, 45, BLACK);
+
+    // write the time on the display.
+    tft.setCursor(5, 5);  
+    tft.setTextColor(BLUE);  
+    tft.setTextSize(4);
+    tft.println(bufTime);
+}
+
+// the function displayCurrTime() checks to see if a certain amount of time
+// has passed before it will refresh the time on the display.
+// this is done to reduce the flicker of the screen.
+void displayCurrTime() {
+  // get the current time.
+  currDisplayTime = millis();
+
+  // has enough time passed so we can refresh screen?
+  if (currDisplayTime - prevDisplayTime > DISPLAY_REFRESH_MSEC) {
+    // render the current time.
+    renderCurrTime();
+    
+    // since we refreshed the display, the current time becomes the previous time.
+    prevDisplayTime = currDisplayTime;
+  }  
+}
+
 
 // check to see if we need to change the system state.
 void checkSysState() {
@@ -271,12 +377,46 @@ void checkSysState() {
       currState = SET_SECOND;
       Serial.println("SET_SECOND mode");
       //btnSet.drawButton(true);
-    } else {
-      // by default switch back to DISPLAY_TIME
+    } else if (currState == SET_SECOND) {
+      // switch back to DISPLAY_TIME
       currState = DISPLAY_TIME;
+
+      // update the time.
+      setTime(h, m, s, currDay, currMonth, currYear);
+
       Serial.println("DISPLAY_TIME mode");
       btnSet.drawButton(false);
     }
+  }
+
+  // if it's in set mode, are the touch areas being pressed?
+  if(currState == SET_HOUR && touchHour.justPressed()) {
+    // increment the hour.
+    h = h + 1;
+    if (h > 23) {
+      // wrap around to 0 hour.
+      h = 0;
+    }
+    updateCurrTime(true);
+    renderCurrTime();
+  } else if (currState == SET_MINUTE && touchMinute.justPressed()) {
+    // increment the minute.
+    m = m + 1;
+    if (m > 59) {
+      // wrap around to 0 minute.
+      m = 0;
+    }
+    updateCurrTime(true);
+    renderCurrTime();
+  } else if (currState == SET_SECOND && touchSecond.justPressed()) {
+    // increment the second.
+    s = s + 1;
+    if (s > 59) {
+      // wrap around to 0 second.
+      s = 0;
+    }
+    updateCurrTime(true);
+    renderCurrTime();
   }
 }
 
@@ -340,49 +480,6 @@ void initScreen() {
   tft.fillScreen(BLACK);
 } 
 
-void updateCurrTime() {
-  // use the now() function to get the time all at once (so the seconds, minutes, and hours will be consistent).
-  currTime = now();
-  h = hour(currTime);
-  m = minute(currTime);
-  s = second(currTime);
-  
-  // use sprintf to format the output into the character buffer.
-  // note that the sprintf %d formatting tags expect ints and not longs, so cast values to int type.
-  sprintf(bufTime, "%02d:%02d:%02d", (int)h, (int)m, (int)s);
-
-  // debug display character buffer in serial output.
-  //Serial.println(bufTime);
-}
-
-// render the time on the screen.
-void renderCurrTime() {
-  // erase the old time.
-    tft.fillRect(0, 0, 205, 45, BLACK);
-
-    // write the time on the display.
-    tft.setCursor(5, 5);  
-    tft.setTextColor(BLUE);  
-    tft.setTextSize(4);
-    tft.println(bufTime);
-}
-
-// the function displayCurrTime() checks to see if a certain amount of time
-// has passed before it will refresh the time on the display.
-// this is done to reduce the flicker of the screen.
-void displayCurrTime() {
-  // get the current time.
-  currDisplayTime = millis();
-
-  // has enough time passed so we can refresh screen?
-  if (currDisplayTime - prevDisplayTime > DISPLAY_REFRESH_MSEC) {
-    // render the current time.
-    renderCurrTime();
-    
-    // since we refreshed the display, the current time becomes the previous time.
-    prevDisplayTime = currDisplayTime;
-  }  
-}
 
 void setTime() {
   // highlight the area to be set.
