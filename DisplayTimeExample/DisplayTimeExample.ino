@@ -479,7 +479,7 @@ void initScreen() {
   tft.fillScreen(BLACK);
 } 
 
-void setTime() {
+void drawTouchAreaBorders() {
   // highlight the area to be set.
   if (currState == SET_HOUR) {
     // draw a rectangle around the hour field.
@@ -546,8 +546,8 @@ void loop() {
   } else if (currState == SET_HOUR 
     || currState == SET_MINUTE 
     || currState == SET_SECOND) {
-    // set time.
-    setTime();
+    // draw the borders around the appropriate touch area.
+    drawTouchAreaBorders();
   } 
     
   delay(50);
