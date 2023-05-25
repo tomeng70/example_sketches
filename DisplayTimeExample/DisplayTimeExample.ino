@@ -180,8 +180,8 @@ long currYear;
 
 // track elapsed time to decide when to refresh display.
 #define DISPLAY_REFRESH_MSEC 500
-unsigned long prevDisplayTime;
-unsigned long currDisplayTime;
+unsigned long prevDisplayRefreshTime;
+unsigned long currDisplayRefreshTime;
 
 // set time button.
 Elegoo_GFX_Button btnSet;
@@ -196,7 +196,7 @@ void initSystem() {
   currState = DISPLAY_TIME;
 
   // set previous time to 0.
-  prevDisplayTime = 0;
+  prevDisplayRefreshTime = 0;
 }
 
 void initButtons() {
@@ -346,18 +346,17 @@ void renderCurrTime() {
 // this is done to reduce the flicker of the screen.
 void displayCurrTime() {
   // get the current time.
-  currDisplayTime = millis();
+  currDisplayRefreshTime = millis();
 
   // has enough time passed so we can refresh screen?
-  if (currDisplayTime - prevDisplayTime > DISPLAY_REFRESH_MSEC) {
+  if (currDisplayRefreshTime - prevDisplayRefreshTime > DISPLAY_REFRESH_MSEC) {
     // render the current time.
     renderCurrTime();
     
     // since we refreshed the display, the current time becomes the previous time.
-    prevDisplayTime = currDisplayTime;
+    prevDisplayRefreshTime = currDisplayRefreshTime;
   }  
 }
-
 
 // check to see if we need to change the system state.
 void checkSysState() {
@@ -479,7 +478,6 @@ void initScreen() {
   // clear screen (to color black).
   tft.fillScreen(BLACK);
 } 
-
 
 void setTime() {
   // highlight the area to be set.
